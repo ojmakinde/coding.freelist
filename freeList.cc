@@ -9,31 +9,38 @@ freeList::freeList( long int*inRAM, int size ) {
 long int*
 freeList::reserve_space( int size ) {
   int total_size = size + 2;    // to account for the header info
-  long int* iter = NULL;
+  long int* iter = head;
   long int* prev = NULL;
-  iter = head;
+  long int* new_chunk = NULL;
 
   while(iter != NULL && iter[0] < total_size){
     prev = iter;
-    iter = iter[1];
+    iter = (long int*)iter[1];
   }
 
   if (iter == NULL){
     return NULL;
   }
 
-  // if iter is still at head, we need to shift head up until where iter ends,
-  // and that could be the start of another free chunk, or just contiguously free memory, not a particular chunk
-
-  iter[0] = size;
-  iter[1] = 1234567 // magic number
-
-  if (iter == head){
-    head = head + total_size;   // moves head forward by the size of the metadata plus allocated chunk
-    return iter + 2;
+  if (iter[0] > total_size){
+    new_chunk = iter + total_size;
+    new_chunk[0] = iter[0] - total_size;
+    new_chunk[1] = iter[1];
+    if (prev == NULL){
+      head = new_chunk;
+    } else {
+      prev[1] = (long int)new_chunk;
+    }
+  } else {
+    if (prev == NULL){
+      head = (long int*)iter[1];
+    } else {
+      prev[1] = iter[1];
+    }
   }
 
-  prev[1] = prev[1] + total_size   // shifts the next pointer for the prev node to point to the chunk after allocated mem
+  iter[0] = size;
+  iter[1] = 0;
   
   return iter + 2;
 }
@@ -41,28 +48,25 @@ freeList::reserve_space( int size ) {
 void
 freeList::free_space( long int* location ) {
   long int* size_ptr = location - 2;
-  int size_val = size_ptr[0];
-
-  size_ptr[1] = head;
+  size_ptr[1] = (long int)head;
   head = size_ptr;
 }
 
 void
 freeList::coalesce_forward() {
-  long int* prev = NULL;
-  long int* iter = NULL;
+  long int* iter = head;
   long int* next_chunk = NULL;
-  iter = head;
+  long int* next_ptr = NULL;
 
-  while (iter[1] != NULL){
-    int chunk_size = iter[0]
-    next_chunk = iter + chunk_size + 3
-    if (next_chunk[1] = typeof(iter)){
-      iter[0] = iter[0] + next_chunk[0] + 2
+  while (iter!= NULL && iter[1] != 0){
+    next_ptr = (long int*)iter[1];
+    next_chunk = iter + iter[0] + 2;     // checks the next immediate block if it is recently freed
+    if (next_ptr == next_chunk){
+      iter[0] += next_chunk[0] + 2;
+      iter[1] = next_chunk[1];
     }
+    iter = (long int*)iter[1];
   }
-
-  // for any block, if the block in front of it has no magic number, merge and simply pudate
 }
 
 // print() is given to you. It traverses the free list and prints out what is there.

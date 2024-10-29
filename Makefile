@@ -9,3 +9,4 @@ main.o:	main.cc
 
 clean:
 	rm -f program main.o freeList.o *~
+pr
